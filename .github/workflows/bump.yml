@@ -1,0 +1,40 @@
+name: bump formula
+
+# Keep Formula/aidemo.rb pointing at the latest @tandryukha/aidemo on npm.
+# Self-contained: uses the repo's own GITHUB_TOKEN, so the aidemo release
+# workflow needs no cross-repo PAT (tandryukha/aidemo#45 — the tap sat six
+# releases behind because nothing automated this).
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Bump url + sha256 to the latest npm release
+        run: |
+          set -euo pipefail
+          f=Formula/aidemo.rb
+          v=$(curl -fsSL https://registry.npmjs.org/@tandryukha/aidemo/latest | \
+                python3 -c 'import json,sys;print(json.load(sys.stdin)["version"])')
+          cur=$(grep -oE 'aidemo-[0-9]+\.[0-9]+\.[0-9]+\.tgz' "$f" | head -1 | sed -E 's/aidemo-(.*)\.tgz/\1/')
+          echo "npm=$v tap=$cur"
+          if [ "$v" = "$cur" ]; then echo "::notice::tap already at $v"; exit 0; fi
+          url="https://registry.npmjs.org/@tandryukha/aidemo/-/aidemo-$v.tgz"
+          curl -fsSL "$url" -o /tmp/aidemo.tgz
+          sha=$(shasum -a 256 /tmp/aidemo.tgz | cut -d' ' -f1)
+          sed -i -E "s#(url \")[^\"]*(\")#\1$url\2#" "$f"
+          sed -i -E "s#(sha256 \")[^\"]*(\").*#\1$sha\2 # $v#" "$f"
+          git diff --quiet && { echo "::warning::nothing changed"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "aidemo $v"
+          git push
+          echo "::notice::bumped tap to $v"
