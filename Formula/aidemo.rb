@@ -2,8 +2,8 @@ class Aidemo < Formula
   desc "Render narrated, captioned product-demo videos from a storyboard.json"
   homepage "https://github.com/tandryukha/aidemo"
   # Scoped-package tarball URL: .../@scope/name/-/<name>-<version>.tgz
-  url "https://registry.npmjs.org/@tandryukha/aidemo/-/aidemo-0.8.0.tgz"
-  sha256 "80597a32b5ef4bfda3adc913d84c2b6638a1899f3cec7ddeba046bf4fe9c7e38" # 0.8.0
+  url "https://registry.npmjs.org/@tandryukha/aidemo/-/aidemo-0.14.1.tgz"
+  sha256 "467ef2139057a5d0d787d4a276c0b5ffbfbeb71056bc5e55c03920ccb8ceef12" # 0.14.1
   license "MIT"
 
   depends_on "ffmpeg"
