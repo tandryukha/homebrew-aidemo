@@ -30,8 +30,10 @@ jobs:
           url="https://registry.npmjs.org/@tandryukha/aidemo/-/aidemo-$v.tgz"
           curl -fsSL "$url" -o /tmp/aidemo.tgz
           sha=$(shasum -a 256 /tmp/aidemo.tgz | cut -d' ' -f1)
-          sed -i -E "s#(url \")[^\"]*(\")#\1$url\2#" "$f"
-          sed -i -E "s#(sha256 \")[^\"]*(\").*#\1$sha\2 # $v#" "$f"
+          # Rewrite the whole line — a \1 backreference followed by a sha that
+          # starts with a digit parses as \10 and sed rejects it.
+          sed -i -E "s#^  url \".*\"\$#  url \"$url\"#" "$f"
+          sed -i -E "s#^  sha256 \".*\$#  sha256 \"$sha\" # $v#" "$f"
           git diff --quiet && { echo "::warning::nothing changed"; exit 0; }
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
