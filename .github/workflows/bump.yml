@@ -30,10 +30,17 @@ jobs:
           url="https://registry.npmjs.org/@tandryukha/aidemo/-/aidemo-$v.tgz"
           curl -fsSL "$url" -o /tmp/aidemo.tgz
           sha=$(shasum -a 256 /tmp/aidemo.tgz | cut -d' ' -f1)
-          # Rewrite the whole line — a \1 backreference followed by a sha that
-          # starts with a digit parses as \10 and sed rejects it.
-          sed -i -E "s#^  url \".*\"\$#  url \"$url\"#" "$f"
-          sed -i -E "s#^  sha256 \".*\$#  sha256 \"$sha\" # $v#" "$f"
+          # Rewrite the url + sha256 lines in python — sed is a minefield here
+          # (the trailing "# <version>" comment collides with any delimiter you
+          # pick, and \1 before a digit-leading sha parses as \10).
+          python3 - "$f" "$url" "$sha" "$v" <<'PY'
+          import re, sys
+          f, url, sha, v = sys.argv[1:5]
+          s = open(f).read()
+          s = re.sub(r'^(\s*)url ".*"$', lambda m: f'{m.group(1)}url "{url}"', s, flags=re.M)
+          s = re.sub(r'^(\s*)sha256 ".*$', lambda m: f'{m.group(1)}sha256 "{sha}" # {v}', s, flags=re.M)
+          open(f, "w").write(s)
+          PY
           git diff --quiet && { echo "::warning::nothing changed"; exit 0; }
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
